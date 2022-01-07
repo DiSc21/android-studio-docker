@@ -1,0 +1,11 @@
+cmd=${dir}/.docker/run_docker.sh
+
+build:
+	${cmd} "echo \"Hello dear friend\""
+
+into:
+	${dir}/.docker/into.sh
+
+android_studio:
+	${cmd} "/opt/android-studio-2020.3.1/android-studio/bin/studio.sh"
+
