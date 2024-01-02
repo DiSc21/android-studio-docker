@@ -6,6 +6,9 @@ build:
 into:
 	${dir}/.docker/into.sh
 
+stop:
+	${dir}/.docker/stop.sh
+
 android_studio:
-	${cmd} "/opt/android-studio-2020.3.1/android-studio/bin/studio.sh"
+	${cmd} "/opt/android-studio/bin/studio.sh"
 

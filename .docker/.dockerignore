@@ -1,0 +1,2 @@
+# ignore android studio installation deps for build context
+*/android_studio_deps*

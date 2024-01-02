@@ -1,20 +1,4 @@
-!android_studio_deps/AndroidVD/
-android_studio_deps/AndroidVD/*
-!android_studio_deps/AndroidVD/.gitkeep
+android_studio_deps/*
 
-!android_studio_deps/AndroidSDK/
-android_studio_deps/AndroidSDK/*
-!android_studio_deps/AndroidSDK/.gitkeep
-
-!android_studio_deps/AndroidGradle/
-android_studio_deps/AndroidGradle/*
-!android_studio_deps/AndroidGradle/.gitkeep
-
-!android_studio_deps/AndroidStudioConfig/
-android_studio_deps/AndroidStudioConfig/*
-!android_studio_deps/AndroidStudioConfig/.gitkeep
-
-!android_studio_deps/AndroidLocalShareHome/
-android_studio_deps/AndroidLocalShareHome/*
-!android_studio_deps/AndroidLocalShareHome/.gitkeep
-
+**/build/
+**/executionHistory/
