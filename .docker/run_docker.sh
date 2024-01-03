@@ -10,9 +10,12 @@ docker run -i --rm --name ${as_docker_name} \
     --device /dev/nvidia0:/dev/nvidia0 \
     --device /dev/nvidiactl:/dev/nvidiactl \
     --device /dev/nvidia-uvm:/dev/nvidia-uvm \
+    --privileged \
     --net=host \
     --env="DISPLAY" \
     -v `pwd`:/ws/ \
-    -v ${android_docker_deps}:/root/ \
+    -v ${android_docker_home_volume}:/home/${user_name} \
+    -u ${user_id}:${group_id} \
+    --entrypoint "/ws/${include_path}/docker_entrypoint.sh" \
     $as_docker_name_tag /bin/bash -c "$@"
 

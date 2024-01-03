@@ -1,108 +1,130 @@
-# FROM ubuntu:18.04
-# FROM osrf/ros@sha256:ccd7251088cb37c2add84d78594aa582fac2765c0b4421b5a0bf7a534f013a86
-#FROM ubuntu@sha256:0fedbd5bd9fb72089c7bbca476949e10593cebed9b1fb9edf5b79dbbacddd7d6
 FROM ubuntu:jammy-20231211.1
 
-# install basic libraries
 RUN apt-get update && apt-get install -y
-RUN apt-get install -y --no-install-recommends --fix-missing ninja-build curl gcc git gnupg2 wget build-essential lsb-release software-properties-common
 
-# install cmake 
-CMD mkdir /opt/cmake
-WORKDIR /opt/cmake/
-RUN wget --no-check-certificate https://github.com/Kitware/CMake/releases/download/v3.22.0-rc2/cmake-3.22.0-rc2-linux-x86_64.sh
-RUN sh cmake-3.22.0-rc2-linux-x86_64.sh --skip-license
-ENV PATH="/opt/cmake/bin/:${PATH}"
+#--------------------------------------------------------------
+#---- Some standard libraries/tools ---------------------------
+#--------------------------------------------------------------
 
-# install gtest
-RUN /bin/bash -c "mkdir -p /third_party/gtest && cd /third_party/gtest && \
-    tar -xvz --strip 1 -f <(wget --no-check-certificate -q -O - https://github.com/google/googletest/archive/refs/tags/release-1.11.0.tar.gz) && \
-    cmake -Bbuild -GNinja . && cmake --build build --target install && rm -rf /third_party/"
+# install basic libraries
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing libc6-i386 lib32z1
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing sudo curl wget zip unzip
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing ca-certificates libldap-common iptables gnupg2 lsb-release
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing vim vim-common vim-runtime vim-scripts exuberant-ctags
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing xorg
 
-# llvm for clang format 14
-#RUN wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | apt-key add - \
-#    && add-apt-repository "deb http://apt.llvm.org/bionic/   llvm-toolchain-bionic  main" \
-#    && add-apt-repository "ppa:ubuntu-toolchain-r/test" \
-#    && apt-get update && apt-get install -y --no-install-recommends --fix-missing clang-format
-RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing clang-format
+# install google-chrome
+WORKDIR /tmp
+ARG CHROME_URL="https://dl.google.com/linux/direct/"
+ARG CHROME_DEB="google-chrome-stable_current_amd64.deb"
+RUN wget --progress=bar:force:noscroll --no-check-certificate ${CHROME_URL}${CHROME_DEB} && apt-get install -y --no-install-recommends --fix-missing ./${CHROME_DEB}
+ENV BROWSER=/usr/bin/google-chrome
 
-#RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing openjdk-18-jdk
-RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing default-jdk
 
-CMD mkdir /tmp/gradle
-WORKDIR /tmp/gradle/
-RUN wget --no-check-certificate https://services.gradle.org/distributions/gradle-8.5-bin.zip
+#--------------------------------------------------------------
+#---- Some standard c++ dev tools -----------------------------
+#--------------------------------------------------------------
 
-RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing unzip zip
-CMD mkdir /opt/gradle
-RUN /bin/bash -c "unzip -d /opt/gradle gradle-8.5-bin.zip"
-ENV PATH="/opt/gradle/gradle-8.5/bin/:${PATH}"
-CMD ["gradle -v"]
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing ninja-build gcc git build-essential software-properties-common
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing make cmake
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing clang-format clang-tidy
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing googletest-tools
 
-# install nvidia drivers
+
+#--------------------------------------------------------------
+#---- NVIDIA drivers and virtualization tools -----------------
+#--------------------------------------------------------------
+
+# install nvidia drivers (DEBIAN_FRONTEND noninteractive to skip country commandline input)
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get install -y --no-install-recommends --fix-missing software-properties-common nvidia-driver-455
 
 # setup kvm dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing iptables qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
-RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing mesa-utils
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing usbutils mesa-utils mesa-common-dev
 RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing libgl1-mesa-dri libgl1-mesa-glx
 RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing virtinst virt-viewer
-#RUN add-apt-repository "ppa:opencpn/opencpn" && apt-get update && apt-get install opencpn libgl1-mesa-dri libgl1-mesa-glx virtinst virt-viewer
-RUN /bin/bash -c "adduser root kvm && adduser root libvirt"
 
-# install rustc
-#RUN apt-get install -y --no-install-recommends --fix-missing rustc
-#CMD ["rustc --version"]
+RUN adduser root libvirt
+RUN adduser root kvm
 
-# install gtk3 glad
-#RUN apt-get install -y --no-install-recommends --fix-missing glade pkg-config libgtk-3-dev libgtkmm-3.0-dev libgstreamermm-1.0-dev
-#RUN apt-get purge fcitx-module-dbus
-#ENV PKG_CONFIG_PATH="/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/lib/x86_64-linux-gnu/gtkmm-3.0/include/:/usr/share/pkgconfig:${PKG_CONFIG_PATH}"
+
+#--------------------------------------------------------------
+#---- Some standard c++ dev tools -----------------------------
+#--------------------------------------------------------------
+
+# install java development kit
+RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing default-jdk
+
+# install gradle 8.5
+CMD mkdir /tmp/gradle
+WORKDIR /tmp/gradle/
+RUN wget --progress=bar:force:noscroll --no-check-certificate https://services.gradle.org/distributions/gradle-8.5-bin.zip
+CMD mkdir /opt/gradle && /bin/bash -c "unzip -d /opt/gradle gradle-8.5-bin.zip"
+ENV PATH="/opt/gradle/gradle-8.5/bin/:${PATH}"
+
 
 # install freeglut and mesa libraries
-RUN apt-get install -y --no-install-recommends --fix-missing mesa-common-dev mesa-utils freeglut3-dev  
+#RUN apt-get install -y --no-install-recommends --fix-missing mesa-common-dev mesa-utils freeglut3-dev
 
-RUN apt-get update && apt-get install -y --no-install-recommends --fix-missing libc6-i386 lib32z1
 
-CMD ["java --version"]
+#--------------------------------------------------------------
+#---- create user/group for host user in docker ---------------
+#--------------------------------------------------------------
+
+# get user id
+ARG ARG_USER_ID=1000
+ENV USER_ID=$ARG_USER_ID
+
+# get user name
+ARG ARG_GROUP_ID=1000
+ENV GROUP_ID=$ARG_GROUP_ID
+
+# get group id
+ARG ARG_USER_NAME="john_doe"
+ENV USER_NAME=$ARG_USER_NAME
+
+# get group name
+ARG ARG_GROUP_NAME="john_doe"
+ENV GROUP_NAME=$ARG_GROUP_NAME
+
+# create user and group
+RUN groupadd -g $GROUP_ID -r $GROUP_NAME
+RUN useradd -u $USER_ID -g $GROUP_ID --create-home -r $USER_NAME
+VOLUME /home/${USER_NAME}
+
+RUN usermod -aG sudo $USER_NAME
+RUN usermod -aG plugdev $USER_NAME
+
+#Change password
+RUN echo "$USER_NAME:$USER_NAME" | chpasswd
+#Make sudo passwordless
+RUN echo "${USER_NAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/90-$USER_NAME
+
+RUN adduser $USER_NAME libvirt
+RUN adduser $USER_NAME kvm
+
+WORKDIR /home/$USER_NAME
+
+
+#--------------------------------------------------------------
+#---- Install Android Studio ----------------------------------
+#--------------------------------------------------------------
 
 RUN add-apt-repository "ppa:maarten-fonville/android-studio" && apt-get update \
   && apt-get install -y --no-install-recommends --fix-missing android-studio
+ENV ANDROID_EMULATOR_USE_SYSTEM_LIBS=1
 
-# install firefox
-RUN apt-get install -y --no-install-recommends --fix-missing firefox
-ENV BROWSER=/usr/bin/firefox
 
-#RUN /bin/bash -c "yes | ~/Android/Sdk/tools/bin/sdkmanager --licenses"
-#Run /bin/bash -c "mkdir ~/android && cd ~/android && wget https://dl.google.com/android/repository/commandlinetools-linux-7583922_latest.zip"
-#RUN apt-get install -y --no-install-recommends --fix-missing zip unzip vim
-#Run /bin/bash -c "cd ~/android && unzip commandlinetools-linux-7583922_latest.zip && rm commandlinetools-linux-7583922_latest.zip"
-#Run /bin/bash -c "cd ~/android/cmdline-tools && mkdir ../tools && mv * ../tools/ && mv ../tools ."
-#
-#Run /bin/bash -c 'echo "export ANDROID_HOME=\$HOME/android" >> $HOME/.bashrc \
-#    && echo "export PATH=\$ANDROID_HOME/cmdline-tools/tools/bin/:\$PATH" >> /root/.bashrc \
-#    && echo "export PATH=\$ANDROID_HOME/cmdline-tools/emulator/:\$PATH" >> /root/.bashrc \
-#    && echo "export PATH=\$ANDROID_HOME/cmdline-tools/platform-tools/:\$PATH" >> /root/.bashrc \
-#    && echo "y" | $HOME/android/cmdline-tools/tools/bin/sdkmanager --install "platform-tools" "platforms;android-29" "build-tools;29.0.2" "emulator" '
+#--------------------------------------------------------------
+#---- Some final docker build steps (usr/wd/envs/...) ---------
+#--------------------------------------------------------------
 
-# install marp
-#RUN /bin/bash -c "cd /usr/bin/ && tar -xvz -f <(wget --no-check-certificate -q -O - https://github.com/marp-team/marp-cli/releases/download/v1.4.2/marp-cli-v1.4.2-linux.tar.gz)";
+USER $USER_NAME
 
-# define alias for starting android studio
-#Run /bin/bash -c 'echo "alias android_studio=/opt/android-studio-2020.3.1/android-studio/bin/studio.sh" >> /root/.bashrc'
-#Run /bin/bash -c 'echo "alias android_studio=/opt/android-studio-2020.3.1/android-studio/bin/studio.sh" >> /root/.bashrc'
-#               && ln -s /root/android_docker_deps/AndroidStudioConfig/ /root/.config/Google/AndroidStudio2020.3 \
+ENV BROWSER=/usr/bin/google-chrome
+ENV ANDROID_EMULATOR_USE_SYSTEM_LIBS=1
 
-# create link to mounted android config deps
-#RUN /bin/bash -c "mkdir -p /root/android_docker_deps/ && mkdir -p /root/.config/Google/ && mkdir -p /root/.local/"
-               #&& ln -s /root/android_docker_deps/AndroidStudioConfig/ /root/.config/Google/AndroidStudio2023.1 \
-#RUN /bin/bash -c "mkdir -p /root/android_docker_deps/ && mkdir -p /root/.config/Google/ && mkdir -p /root/.local/ \
-#               && ln -s /root/android_docker_deps/AndroidVD/ /root/.android \
-#               && ln -s /root/android_docker_deps/AndroidGradle/ /root/.gradle "
-##               && ln -s /root/android_docker_deps/AndroidGradle/ /root/.gradle \
-##               && ln -s /root/android_docker_deps/AndroidLocalShareHome/ /root/.local/share "
-
-CMD mkdir /ws/
-WORKDIR /ws/
-
+#COPY .docker/docker_entrypoint.sh /usr/local/bin/docker_entrypoint.sh
+#ENTRYPOINT [ "/usr/local/bin/docker_entrypoint.sh" ]
+ENTRYPOINT ["/bin/bash", "-c", "/ws/.docker/docker_entrypoint.sh"]

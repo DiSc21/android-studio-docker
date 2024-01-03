@@ -2,10 +2,10 @@
 
 source $(dirname "${BASH_SOURCE[0]}")/include.sh
 
-if docker ps | grep -q $docker_name
+if docker ps | grep -q $as_docker_name
 then
-  docker stop $docker_name
+  docker stop $as_docker_name
 else
-  echo "docker $docker_name not running"
+  echo "docker $as_docker_name not running"
 fi
 
